@@ -12,9 +12,10 @@ import (
 
 // Repository contains information about a GitHub repo
 type Repository struct {
-	ID    string
-	Name  string
-	Owner RepositoryOwner
+	ID       string
+	Name     string
+	CloneURL string
+	Owner    RepositoryOwner
 
 	IsPrivate        bool
 	HasIssuesEnabled bool
@@ -230,9 +231,10 @@ func RepoNetwork(client *Client, repos []ghrepo.Interface) (RepoNetworkResult, e
 
 // repositoryV3 is the repository result from GitHub API v3
 type repositoryV3 struct {
-	NodeID string
-	Name   string
-	Owner  struct {
+	NodeID   string
+	Name     string
+	CloneURL string `json:"clone_url"`
+	Owner    struct {
 		Login string
 	}
 }
@@ -248,8 +250,9 @@ func ForkRepo(client *Client, repo ghrepo.Interface) (*Repository, error) {
 	}
 
 	return &Repository{
-		ID:   result.NodeID,
-		Name: result.Name,
+		ID:       result.NodeID,
+		Name:     result.Name,
+		CloneURL: result.CloneURL,
 		Owner: RepositoryOwner{
 			Login: result.Owner.Login,
 		},

@@ -50,6 +50,7 @@ func isURL(arg string) bool {
 }
 
 func repoFork(cmd *cobra.Command, args []string) error {
+	// TODO enable this working outside of repo
 	ctx := contextForCommand(cmd)
 	apiClient, err := apiClientForContext(ctx)
 	if err != nil {
@@ -103,7 +104,26 @@ func repoFork(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("%s %s", utils.Cyan(ghrepo.FullName(possibleFork)), utils.Red("already exists!"))
 	}
 
-	// TODO the thing
+	forkedRepo, err := api.ForkRepo(apiClient, toFork)
+	if err != nil {
+		return fmt.Errorf("failed to fork: %w", err)
+	}
+
+	fmt.Fprintf(out, "%s %s %s!\n",
+		utils.Cyan(ghrepo.FullName(toFork)),
+		utils.Green("successfully forked to"),
+		utils.Cyan(ghrepo.FullName(forkedRepo)))
+
+	fmt.Fprintf(out, "Add new fork as a remote: git remote add fork %s\n", forkedRepo.CloneURL)
+	// TODO soon gh repo clone
+	fmt.Fprintf(out, "Clone the new fork: git clone %s\n", forkedRepo.CloneURL)
+
+	// TODO: should we do more, here?
+
+	// - if no repo was specified, we're "in" a repo and creating a fork of it. probably they want a
+	// remote called "fork" added (we could prompt about this or just tell them how to do it).
+	// - if this was called with an arg, we're going to need to actually clone the fork so they can
+	// use it (right?)
 
 	return nil
 }
