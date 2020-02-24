@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/cli/cli/api"
 	"github.com/cli/cli/internal/ghrepo"
 	"github.com/cli/cli/utils"
 	"github.com/spf13/cobra"
@@ -50,6 +51,10 @@ func isURL(arg string) bool {
 
 func repoFork(cmd *cobra.Command, args []string) error {
 	ctx := contextForCommand(cmd)
+	apiClient, err := apiClientForContext(ctx)
+	if err != nil {
+		return fmt.Errorf("unable to create client: %w", err)
+	}
 
 	var toFork ghrepo.Interface
 	if len(args) == 0 {
@@ -57,7 +62,6 @@ func repoFork(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("unable to determine base repository: %w", err)
 		}
-		// TODO check if user already has a fork
 		toFork = baseRepo
 	} else {
 		repoArg := args[0]
@@ -83,6 +87,23 @@ func repoFork(cmd *cobra.Command, args []string) error {
 
 	out := colorableOut(cmd)
 	fmt.Fprintf(out, "Forking %s...\n", utils.Cyan(ghrepo.FullName(toFork)))
+
+	authLogin, err := ctx.AuthLogin()
+	if err != nil {
+		return fmt.Errorf("could not determine current username: %w", err)
+	}
+
+	possibleFork := ghrepo.New(authLogin, toFork.RepoName())
+	exists, err := api.RepoExistsOnGitHub(apiClient, possibleFork)
+	if err != nil {
+		return fmt.Errorf("problem with API request: %w", err)
+	}
+
+	if exists {
+		return fmt.Errorf("%s %s", utils.Cyan(ghrepo.FullName(possibleFork)), utils.Red("already exists!"))
+	}
+
+	// TODO the thing
 
 	return nil
 }
